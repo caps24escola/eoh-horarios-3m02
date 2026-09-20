@@ -1,1 +1,948 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Horário Escolar</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Glassmorphism Styles */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        .dark .glass-panel {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(229, 231, 235, 0.6);
+            transition: all 0.2s ease-in-out;
+        }
+
+        .dark .glass-card {
+            background: rgba(31, 41, 55, 0.5);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Active Class Glow Animation */
+        @keyframes pulse-glow {
+            0%, 100% {
+                box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+                border-color: rgba(59, 130, 246, 0.8);
+            }
+            50% {
+                box-shadow: 0 0 25px rgba(59, 130, 246, 0.8);
+                border-color: rgba(99, 102, 241, 1);
+            }
+        }
+
+        .active-class-card {
+            animation: pulse-glow 2.5s infinite ease-in-out;
+            background: rgba(59, 130, 246, 0.08) !important;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.5);
+            border-radius: 9999px;
+        }
+        .dark ::webkit-scrollbar-thumb {
+            background: rgba(75, 85, 99, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col antialiased selection:bg-blue-500 selection:text-white">
+
+    <!-- Navbar / Header -->
+    <header class="sticky top-0 z-40 w-full glass-panel border-b border-slate-200 dark:border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            
+            <!-- Brand Logo / Title -->
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl text-white shadow-lg shadow-blue-500/30">
+                    <i data-lucide="calendar" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg sm:text-xl leading-tight bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 bg-clip-text text-transparent">
+                        Grade 3ºM02
+                    </h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Horário de Aulas</p>
+                </div>
+            </div>
+
+            <!-- Live Status & Clock -->
+            <div class="hidden md:flex items-center space-x-4 bg-slate-200/50 dark:bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-300/50 dark:border-slate-700/50">
+                <div class="flex items-center space-x-2">
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </span>
+                    <span id="current-day-badge" class="text-xs font-semibold text-slate-700 dark:text-slate-200">Segunda-Feira</span>
+                </div>
+                <div class="h-3 w-px bg-slate-300 dark:bg-slate-700"></div>
+                <div id="live-clock" class="text-xs font-mono font-bold text-blue-600 dark:text-blue-400">
+                    00:00:00
+                </div>
+            </div>
+
+            <!-- Actions & Theme Toggle -->
+            <div class="flex items-center space-x-2">
+                <!-- Time Simulator Toggle Button -->
+                <button onclick="toggleTimeSimulatorModal()" title="Simulador de Horário" class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 transition">
+                    <i data-lucide="clock" class="w-5 h-5"></i>
+                </button>
+
+                <!-- Theme Toggle -->
+                <button id="theme-toggle" onclick="toggleTheme()" title="Alternar Tema" class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 transition">
+                    <i data-lucide="moon" id="theme-icon-dark" class="w-5 h-5 hidden"></i>
+                    <i data-lucide="sun" id="theme-icon-light" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Top Status Banner (Live Active Class Summary) -->
+        <div id="active-class-banner" class="glass-panel p-4 sm:p-5 rounded-2xl relative overflow-hidden border-l-4 border-l-blue-600 dark:border-l-blue-500 shadow-sm">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="flex items-center space-x-4">
+                    <div id="active-class-icon-bg" class="p-3 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl">
+                        <i data-lucide="book-open" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span id="active-status-tag" class="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded-md bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300">
+                                EM ANDAMENTO
+                            </span>
+                            <span id="active-period-num" class="text-xs text-slate-500 dark:text-slate-400 font-medium">1ª Aula (07:00 - 07:50)</span>
+                        </div>
+                        <h2 id="active-subject-title" class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-0.5">
+                            Língua Portuguesa
+                        </h2>
+                        <div class="flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-slate-300 mt-1">
+                            <span class="flex items-center space-x-1">
+                                <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400"></i>
+                                <span id="active-teacher-name">Paula</span>
+                            </span>
+                            <span>•</span>
+                            <span class="flex items-center space-x-1">
+                                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400"></i>
+                                <span id="active-room-name">Sala 05</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Next Class Quick Preview -->
+                <div class="w-full sm:w-auto bg-slate-100/80 dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700/60 text-right sm:min-w-[200px]">
+                    <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">PRÓXIMA AULA</span>
+                    <span id="next-subject-title" class="text-sm font-bold text-slate-800 dark:text-slate-200 truncate block">História</span>
+                    <span id="next-subject-details" class="text-xs text-slate-500 dark:text-slate-400 block mt-0.5">Karol • Sala 03</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter & Search Section -->
+        <div class="glass-panel p-4 rounded-2xl space-y-3">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-3">
+                <!-- View Tabs -->
+                <div class="flex bg-slate-200/70 dark:bg-slate-800/80 p-1 rounded-xl w-full md:w-auto overflow-x-auto">
+                    <button onclick="switchView('daily')" id="tab-daily" class="flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center space-x-2 bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm">
+                        <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                        <span>Visão Diária</span>
+                    </button>
+                    <button onclick="switchView('weekly')" id="tab-weekly" class="flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center space-x-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                        <i data-lucide="table" class="w-4 h-4"></i>
+                        <span>Grade Semanal</span>
+                    </button>
+                    <button onclick="switchView('directory')" id="tab-directory" class="flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center space-x-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                        <i data-lucide="users" class="w-4 h-4"></i>
+                        <span>Professores & Matérias</span>
+                    </button>
+                </div>
+
+                <!-- Search Input & Filters -->
+                <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                    <!-- Universal Search -->
+                    <div class="relative flex-1 md:w-64">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="search-input" oninput="handleSearch()" placeholder="Buscar matéria, professor, sala..." 
+                               class="w-full pl-9 pr-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                    </div>
+
+                    <!-- Room Filter Dropdown -->
+                    <select id="room-filter" onchange="handleFilterChange()" class="py-2 px-3 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Todas as Salas</option>
+                    </select>
+
+                    <!-- Teacher Filter Dropdown -->
+                    <select id="teacher-filter" onchange="handleFilterChange()" class="py-2 px-3 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Todos os Professores</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 1: DAILY VIEW -->
+        <section id="view-daily" class="space-y-5">
+            <!-- Day Selector Tabs -->
+            <div class="flex space-x-2 overflow-x-auto pb-1 scrollbar-none">
+                <button onclick="selectDay('segunda')" id="day-btn-segunda" class="day-tab-btn flex-1 min-w-[110px] py-2.5 px-4 rounded-xl font-medium text-xs text-center border transition-all duration-200 flex flex-col items-center gap-1">
+                    <span class="text-[10px] uppercase tracking-wider text-slate-400">SEG</span>
+                    <span class="font-bold text-sm">Segunda</span>
+                </button>
+                <button onclick="selectDay('terca')" id="day-btn-terca" class="day-tab-btn flex-1 min-w-[110px] py-2.5 px-4 rounded-xl font-medium text-xs text-center border transition-all duration-200 flex flex-col items-center gap-1">
+                    <span class="text-[10px] uppercase tracking-wider text-slate-400">TER</span>
+                    <span class="font-bold text-sm">Terça</span>
+                </button>
+                <button onclick="selectDay('quarta')" id="day-btn-quarta" class="day-tab-btn flex-1 min-w-[110px] py-2.5 px-4 rounded-xl font-medium text-xs text-center border transition-all duration-200 flex flex-col items-center gap-1">
+                    <span class="text-[10px] uppercase tracking-wider text-slate-400">QUA</span>
+                    <span class="font-bold text-sm">Quarta</span>
+                </button>
+                <button onclick="selectDay('quinta')" id="day-btn-quinta" class="day-tab-btn flex-1 min-w-[110px] py-2.5 px-4 rounded-xl font-medium text-xs text-center border transition-all duration-200 flex flex-col items-center gap-1">
+                    <span class="text-[10px] uppercase tracking-wider text-slate-400">QUI</span>
+                    <span class="font-bold text-sm">Quinta</span>
+                </button>
+                <button onclick="selectDay('sexta')" id="day-btn-sexta" class="day-tab-btn flex-1 min-w-[110px] py-2.5 px-4 rounded-xl font-medium text-xs text-center border transition-all duration-200 flex flex-col items-center gap-1">
+                    <span class="text-[10px] uppercase tracking-wider text-slate-400">SEX</span>
+                    <span class="font-bold text-sm">Sexta</span>
+                </button>
+            </div>
+
+            <!-- Cards Grid Container -->
+            <div id="daily-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Dynamically generated cards via JS -->
+            </div>
+        </section>
+
+        <!-- VIEW 2: WEEKLY GRID VIEW -->
+        <section id="view-weekly" class="hidden space-y-4">
+            <div class="glass-panel p-4 rounded-2xl overflow-x-auto shadow-sm">
+                <table class="w-full text-left border-collapse min-w-[800px]">
+                    <thead>
+                        <tr class="border-b border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                            <th class="py-3 px-4 w-28">Horário</th>
+                            <th class="py-3 px-4">Segunda</th>
+                            <th class="py-3 px-4">Terça</th>
+                            <th class="py-3 px-4">Quarta</th>
+                            <th class="py-3 px-4">Quinta</th>
+                            <th class="py-3 px-4">Sexta</th>
+                        </tr>
+                    </thead>
+                    <tbody id="weekly-table-body" class="divide-y divide-slate-200/60 dark:divide-slate-800/60 text-xs">
+                        <!-- Dynamically generated table rows -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- VIEW 3: DIRECTORY VIEW -->
+        <section id="view-directory" class="hidden space-y-6">
+            <!-- Directory Tabs -->
+            <div class="flex border-b border-slate-200 dark:border-slate-800 space-x-6">
+                <button onclick="switchDirectoryTab('teachers')" id="dir-tab-teachers" class="pb-3 text-sm font-bold text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400">
+                    Professores (<span id="count-teachers">0</span>)
+                </button>
+                <button onclick="switchDirectoryTab('subjects')" id="dir-tab-subjects" class="pb-3 text-sm font-bold text-slate-500 dark:text-slate-400 border-b-2 border-transparent hover:text-slate-800 dark:hover:text-slate-200">
+                    Matérias (<span id="count-subjects">0</span>)
+                </button>
+            </div>
+
+            <!-- Teachers Directory Grid -->
+            <div id="dir-teachers-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Dynamically populated -->
+            </div>
+
+            <!-- Subjects Directory Grid -->
+            <div id="dir-subjects-container" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Dynamically populated -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal: Time Simulator -->
+    <div id="simulator-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-panel bg-white dark:bg-slate-900 w-full max-w-md p-6 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 space-y-5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="clock" class="w-5 h-5 text-blue-500"></i>
+                    <h3 class="font-bold text-base text-slate-900 dark:text-white">Simulador de Horário</h3>
+                </div>
+                <button onclick="toggleTimeSimulatorModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                Teste como o indicador visual reage para diferentes dias e horários da semana.
+            </p>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Dia da Semana</label>
+                    <select id="sim-day-select" class="w-full p-2.5 text-xs bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500">
+                        <option value="segunda">Segunda-Feira</option>
+                        <option value="terca">Terça-Feira</option>
+                        <option value="quarta">Quarta-Feira</option>
+                        <option value="quinta">Quinta-Feira</option>
+                        <option value="sexta">Sexta-Feira</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Horário Simulado</label>
+                    <input type="time" id="sim-time-input" class="w-full p-2.5 text-xs bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 pt-2">
+                <button onclick="applySimulation()" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-xs transition">
+                    Aplicar Simulação
+                </button>
+                <button onclick="resetSimulation()" class="py-2.5 px-4 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-semibold text-xs transition">
+                    Restaurar Real
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data Structures parsed directly from provided code
+        const ROOMS = {
+            s0: 'Lab. Informática',
+            s1: 'Sala 01',
+            s3: 'Sala 03',
+            s5: 'Sala 05',
+            s6: 'Sala 06',
+            s7: 'Sala 07',
+            s8: 'Sala 08',
+            s9: 'Sala 09',
+            s10: 'Sala 10'
+        };
+
+        const TEACHERS = {
+            p1: 'Silvanei',
+            p2: 'Patrícia',
+            p3: 'Paula',
+            p4: 'Renato',
+            p5: 'Matheus',
+            p6: 'Karol',
+            p7: 'Tatiana',
+            p8: 'Danilo',
+            p9: 'Fabiana',
+            p10: 'Elves'
+        };
+
+        // Subjects Mapping with badges & colors
+        const SUBJECTS = {
+            m1: { name: 'Língua Portuguesa', code: 'PORT', teacher: TEACHERS.p3, color: 'blue' },
+            m2: { name: 'D.G', fullName: 'Design Gráfico', code: 'DG', teacher: TEACHERS.p5, color: 'indigo' },
+            m3: { name: 'D.S', fullName: 'Desenvolvimento de Sistemas', code: 'DS', teacher: TEACHERS.p5, color: 'violet' },
+            m4: { name: 'Proj. Empreendedor', code: 'EMP', teacher: TEACHERS.p5, color: 'emerald' },
+            m5: { name: 'Eletiva', code: 'ELET', teacher: 'Não Definido', color: 'slate' },
+            m6: { name: 'P. Experimentais', code: 'P.EXP', teacher: TEACHERS.p4, color: 'amber' },
+            m7: { name: 'LPOO', fullName: 'Ling. Prog. Obj. e Orientada', code: 'LPOO', teacher: TEACHERS.p2, color: 'purple' },
+            m8: { name: 'PWD', fullName: 'Programação Web & Design', code: 'PWD', teacher: TEACHERS.p2, color: 'cyan' },
+            m9: { name: 'ASPR', fullName: 'Análise e Suporte / Algoritmos', code: 'ASPR', teacher: TEACHERS.p9, color: 'pink' },
+            m10: { name: 'Geografia', code: 'GEO', teacher: TEACHERS.p10, color: 'green' },
+            m11: { name: 'Matemática', code: 'MAT', teacher: TEACHERS.p7, color: 'rose' },
+            m12: { name: 'Biologia', code: 'BIO', teacher: TEACHERS.p8, color: 'teal' },
+            m13: { name: 'A.P.S', fullName: 'Análise e Proj. de Sistemas', code: 'APS', teacher: TEACHERS.p1, color: 'orange' },
+            m14: { name: 'História', code: 'HIST', teacher: TEACHERS.p6, color: 'fuchsia' }
+        };
+
+        // Time Slots Config
+        const PERIOD_TIMES = [
+            { id: 1, start: '07:00', end: '07:50', label: '1ª Aula' },
+            { id: 2, start: '07:50', end: '08:40', label: '2ª Aula' },
+            { id: 3, start: '08:40', end: '09:30', label: '3ª Aula' },
+            { id: 4, start: '09:50', end: '10:40', label: '4ª Aula' },
+            { id: 5, start: '10:40', end: '11:30', label: '5ª Aula' },
+            { id: 6, start: '12:20', end: '13:10', label: '6ª Aula' },
+            { id: 7, start: '13:10', end: '14:00', label: '7ª Aula' }
+        ];
+
+        // Weekly Schedule Matrix
+        const SCHEDULE = {
+            segunda: [
+                { period: 1, subject: SUBJECTS.m1, room: ROOMS.s5 },
+                { period: 2, subject: SUBJECTS.m14, room: ROOMS.s3 },
+                { period: 3, subject: SUBJECTS.m12, room: ROOMS.s6 },
+                { period: 4, subject: SUBJECTS.m11, room: ROOMS.s7 },
+                { period: 5, subject: SUBJECTS.m11, room: ROOMS.s7 },
+                { period: 6, subject: SUBJECTS.m1, room: ROOMS.s5 },
+                { period: 7, subject: SUBJECTS.m6, room: ROOMS.s10 }
+            ],
+            terca: [
+                { period: 1, subject: SUBJECTS.m3, room: ROOMS.s8 },
+                { period: 2, subject: SUBJECTS.m7, room: ROOMS.s10 },
+                { period: 3, subject: SUBJECTS.m11, room: ROOMS.s7 },
+                { period: 4, subject: SUBJECTS.m11, room: ROOMS.s7 },
+                { period: 5, subject: SUBJECTS.m1, room: ROOMS.s5 },
+                { period: 6, subject: SUBJECTS.m2, room: ROOMS.s0 },
+                { period: 7, subject: SUBJECTS.m4, room: ROOMS.s10 }
+            ],
+            quarta: [
+                { period: 1, subject: SUBJECTS.m1, room: ROOMS.s5 },
+                { period: 2, subject: SUBJECTS.m4, room: ROOMS.s10 },
+                { period: 3, subject: SUBJECTS.m8, room: ROOMS.s10 },
+                { period: 4, subject: SUBJECTS.m8, room: ROOMS.s0 },
+                { period: 5, subject: SUBJECTS.m9, room: ROOMS.s9 },
+                { period: 6, subject: SUBJECTS.m10, room: ROOMS.s1 },
+                { period: 7, subject: SUBJECTS.m9, room: ROOMS.s0 }
+            ],
+            quinta: [
+                { period: 1, subject: SUBJECTS.m14, room: ROOMS.s3 },
+                { period: 2, subject: SUBJECTS.m3, room: ROOMS.s10 },
+                { period: 3, subject: SUBJECTS.m11, room: ROOMS.s7 },
+                { period: 4, subject: SUBJECTS.m13, room: ROOMS.s8 },
+                { period: 5, subject: SUBJECTS.m2, room: ROOMS.s8 },
+                { period: 6, subject: SUBJECTS.m9, room: ROOMS.s9 },
+                { period: 7, subject: SUBJECTS.m7, room: ROOMS.s10 }
+            ],
+            sexta: [
+                { period: 1, subject: SUBJECTS.m3, room: ROOMS.s10 },
+                { period: 2, subject: SUBJECTS.m7, room: ROOMS.s10 },
+                { period: 3, subject: SUBJECTS.m13, room: ROOMS.s8 },
+                { period: 4, subject: SUBJECTS.m10, room: ROOMS.s1 },
+                { period: 5, subject: SUBJECTS.m5, room: 'Sem Sala' },
+                { period: 6, subject: SUBJECTS.m5, room: 'Sem Sala' },
+                { period: 7, subject: SUBJECTS.m12, room: ROOMS.s6 }
+            ]
+        };
+
+        let state = {
+            currentView: 'daily',
+            selectedDay: 'segunda',
+            searchQuery: '',
+            roomFilter: '',
+            teacherFilter: '',
+            simulatedDay: null,
+            simulatedTime: null
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initFilters();
+            detectCurrentDay();
+            renderDailyCards();
+            renderWeeklyGrid();
+            renderDirectory();
+            startLiveClock();
+            lucide.createIcons();
+        });
+
+        // Populate dropdown filters
+        function initFilters() {
+            const roomSelect = document.getElementById('room-filter');
+            Object.values(ROOMS).forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r;
+                opt.textContent = r;
+                roomSelect.appendChild(opt);
+            });
+
+            const teacherSelect = document.getElementById('teacher-filter');
+            Object.values(TEACHERS).forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent = t;
+                teacherSelect.appendChild(opt);
+            });
+        }
+
+        // Auto-detect system day to pick active day tab
+        function detectCurrentDay() {
+            const daysMap = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+            const todayIndex = new Date().getDay();
+            const todayName = daysMap[todayIndex];
+
+            if (SCHEDULE[todayName]) {
+                state.selectedDay = todayName;
+            } else {
+                state.selectedDay = 'segunda'; // default to Monday on weekends
+            }
+            updateDayTabsUI();
+        }
+
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            document.getElementById('theme-icon-dark').classList.toggle('hidden', !isDark);
+            document.getElementById('theme-icon-light').classList.toggle('hidden', isDark);
+        }
+
+        function switchView(view) {
+            state.currentView = view;
+            
+            // Tab Buttons Styling
+            ['daily', 'weekly', 'directory'].forEach(v => {
+                const btn = document.getElementById(`tab-${v}`);
+                const isCurrent = v === view;
+                btn.className = isCurrent 
+                    ? 'flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center space-x-2 bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                    : 'flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center space-x-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
+            });
+
+            // Section Visibility
+            document.getElementById('view-daily').classList.toggle('hidden', view !== 'daily');
+            document.getElementById('view-weekly').classList.toggle('hidden', view !== 'weekly');
+            document.getElementById('view-directory').classList.toggle('hidden', view !== 'directory');
+        }
+
+        function selectDay(dayKey) {
+            state.selectedDay = dayKey;
+            updateDayTabsUI();
+            renderDailyCards();
+            updateLiveStatusBanner();
+        }
+
+        function updateDayTabsUI() {
+            const days = ['segunda', 'terca', 'quarta', 'quinta', 'sexta'];
+            days.forEach(d => {
+                const btn = document.getElementById(`day-btn-${d}`);
+                if (d === state.selectedDay) {
+                    btn.className = 'day-tab-btn flex-1 min-w-[110px] py-2.5 px-4 rounded-xl font-medium text-xs text-center border transition-all duration-200 flex flex-col items-center gap-1 bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-500/25';
+                } else {
+                    btn.className = 'day-tab-btn flex-1 min-w-[110px] py-2.5 px-4 rounded-xl font-medium text-xs text-center border transition-all duration-200 flex flex-col items-center gap-1 glass-card border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800';
+                }
+            });
+        }
+
+        function renderDailyCards() {
+            const container = document.getElementById('daily-cards-container');
+            container.innerHTML = '';
+
+            const dayData = SCHEDULE[state.selectedDay] || [];
+            const activePeriodInfo = getCurrentActivePeriodInfo();
+
+            dayData.forEach(item => {
+                const periodTime = PERIOD_TIMES.find(p => p.id === item.period);
+                const isFiltered = matchesFilters(item);
+
+                if (!isFiltered) return;
+
+                const isActiveNow = activePeriodInfo.day === state.selectedDay && activePeriodInfo.periodId === item.period;
+
+                const card = document.createElement('div');
+                card.className = `glass-card p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden ${isActiveNow ? 'active-class-card border-2 border-blue-500' : ''}`;
+
+                // Color badge theme helper
+                const colorMap = {
+                    blue: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+                    indigo: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
+                    violet: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
+                    emerald: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+                    purple: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+                    cyan: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300',
+                    pink: 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300',
+                    green: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+                    rose: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
+                    teal: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300',
+                    amber: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+                    orange: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+                    fuchsia: 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/40 dark:text-fuchsia-300',
+                    slate: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                };
+
+                const badgeClass = colorMap[item.subject.color] || colorMap.slate;
+
+                card.innerHTML = `
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-center space-x-2">
+                            <span class="px-2.5 py-1 text-xs font-bold rounded-lg ${badgeClass}">
+                                ${item.subject.code}
+                            </span>
+                            ${isActiveNow ? `<span class="flex h-2 w-2 relative">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                            </span>` : ''}
+                        </div>
+                        <span class="text-xs font-semibold text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-lg">
+                            ${periodTime.start} - ${periodTime.end}
+                        </span>
+                    </div>
+
+                    <div class="my-3">
+                        <h3 class="font-bold text-base text-slate-900 dark:text-white leading-snug">
+                            ${item.subject.name}
+                        </h3>
+                        ${item.subject.fullName ? `<p class="text-[11px] text-slate-400 mt-0.5 truncate">${item.subject.fullName}</p>` : ''}
+                    </div>
+
+                    <div class="pt-3 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
+                        <div class="flex items-center space-x-1.5">
+                            <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400"></i>
+                            <span class="font-medium">${item.subject.teacher}</span>
+                        </div>
+                        <div class="flex items-center space-x-1.5 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                            <i data-lucide="map-pin" class="w-3.5 h-3.5 text-blue-500"></i>
+                            <span class="font-bold">${item.room}</span>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+
+            if (container.children.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full py-12 text-center text-slate-400">
+                        <i data-lucide="search-x" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+                        <p class="text-sm font-medium">Nenhuma aula encontrada para os filtros aplicados.</p>
+                    </div>
+                `;
+            }
+
+            lucide.createIcons();
+        }
+
+        function renderWeeklyGrid() {
+            const tbody = document.getElementById('weekly-table-body');
+            tbody.innerHTML = '';
+
+            PERIOD_TIMES.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition';
+
+                let rowHtml = `
+                    <td class="py-3 px-4 font-semibold text-slate-500 dark:text-slate-400">
+                        <span class="block text-slate-800 dark:text-slate-200 font-bold">${p.label}</span>
+                        <span class="text-[10px]">${p.start} - ${p.end}</span>
+                    </td>
+                `;
+
+                ['segunda', 'terca', 'quarta', 'quinta', 'sexta'].forEach(day => {
+                    const item = SCHEDULE[day].find(i => i.period === p.id);
+                    const isFiltered = matchesFilters(item);
+
+                    if (item && isFiltered) {
+                        rowHtml += `
+                            <td class="py-3 px-4">
+                                <div class="p-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 space-y-1">
+                                    <span class="font-bold text-slate-900 dark:text-white block truncate">${item.subject.name}</span>
+                                    <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                                        <span>${item.subject.teacher}</span>
+                                        <span class="px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold text-[10px]">${item.room}</span>
+                                    </div>
+                                </div>
+                            </td>
+                        `;
+                    } else {
+                        rowHtml += `<td class="py-3 px-4 text-slate-300 dark:text-slate-700 text-center">-</td>`;
+                    }
+                });
+
+                tr.innerHTML = rowHtml;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderDirectory() {
+            // Count badges
+            const teacherList = Object.values(TEACHERS);
+            const subjectList = Object.values(SUBJECTS);
+            document.getElementById('count-teachers').textContent = teacherList.length;
+            document.getElementById('count-subjects').textContent = subjectList.length;
+
+            // Render Teachers
+            const teachersContainer = document.getElementById('dir-teachers-container');
+            teachersContainer.innerHTML = '';
+
+            teacherList.forEach(tName => {
+                // Find all subjects taught by this teacher
+                const taught = subjectList.filter(s => s.teacher === tName);
+                
+                // Find total weekly classes count
+                let totalWeeklyClasses = 0;
+                Object.values(SCHEDULE).forEach(dayList => {
+                    dayList.forEach(slot => {
+                        if (slot.subject.teacher === tName) totalWeeklyClasses++;
+                    });
+                });
+
+                const card = document.createElement('div');
+                card.className = 'glass-card p-4 rounded-2xl space-y-3';
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm">
+                                ${tName.charAt(0)}
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-900 dark:text-white text-sm">${tName}</h4>
+                                <span class="text-xs text-slate-400">${taught.length} Disciplina(s)</span>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-1 text-xs font-semibold bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
+                            ${totalWeeklyClasses} aulas/sem
+                        </span>
+                    </div>
+
+                    <div class="pt-2 flex flex-wrap gap-1.5">
+                        ${taught.map(s => `<span class="px-2 py-0.5 text-[11px] rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium">${s.name}</span>`).join('')}
+                    </div>
+                `;
+                teachersContainer.appendChild(card);
+            });
+
+            // Render Subjects
+            const subjectsContainer = document.getElementById('dir-subjects-container');
+            subjectsContainer.innerHTML = '';
+
+            subjectList.forEach(sub => {
+                let count = 0;
+                Object.values(SCHEDULE).forEach(dayList => {
+                    dayList.forEach(slot => {
+                        if (slot.subject.name === sub.name) count++;
+                    });
+                });
+
+                const card = document.createElement('div');
+                card.className = 'glass-card p-4 rounded-2xl space-y-3';
+                card.innerHTML = `
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h4 class="font-bold text-slate-900 dark:text-white text-sm">${sub.name}</h4>
+                            <span class="text-xs text-slate-400">Professor: ${sub.teacher}</span>
+                        </div>
+                        <span class="px-2 py-1 text-xs font-bold rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+                            ${count}h/sem
+                        </span>
+                    </div>
+                `;
+                subjectsContainer.appendChild(card);
+            });
+
+            lucide.createIcons();
+        }
+
+        function switchDirectoryTab(tab) {
+            const isTeachers = tab === 'teachers';
+            document.getElementById('dir-teachers-container').classList.toggle('hidden', !isTeachers);
+            document.getElementById('dir-subjects-container').classList.toggle('hidden', isTeachers);
+
+            const btnT = document.getElementById('dir-tab-teachers');
+            const btnS = document.getElementById('dir-tab-subjects');
+
+            btnT.className = isTeachers 
+                ? 'pb-3 text-sm font-bold text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                : 'pb-3 text-sm font-bold text-slate-500 dark:text-slate-400 border-b-2 border-transparent hover:text-slate-800 dark:hover:text-slate-200';
+            
+            btnS.className = !isTeachers 
+                ? 'pb-3 text-sm font-bold text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                : 'pb-3 text-sm font-bold text-slate-500 dark:text-slate-400 border-b-2 border-transparent hover:text-slate-800 dark:hover:text-slate-200';
+        }
+
+        function handleSearch() {
+            state.searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
+            renderDailyCards();
+            renderWeeklyGrid();
+        }
+
+        function handleFilterChange() {
+            state.roomFilter = document.getElementById('room-filter').value;
+            state.teacherFilter = document.getElementById('teacher-filter').value;
+            renderDailyCards();
+            renderWeeklyGrid();
+        }
+
+        function matchesFilters(slotItem) {
+            if (!slotItem) return false;
+
+            const q = state.searchQuery;
+            const matchesSearch = !q || 
+                slotItem.subject.name.toLowerCase().includes(q) ||
+                (slotItem.subject.fullName && slotItem.subject.fullName.toLowerCase().includes(q)) ||
+                slotItem.subject.teacher.toLowerCase().includes(q) ||
+                slotItem.room.toLowerCase().includes(q);
+
+            const matchesRoom = !state.roomFilter || slotItem.room === state.roomFilter;
+            const matchesTeacher = !state.teacherFilter || slotItem.subject.teacher === state.teacherFilter;
+
+            return matchesSearch && matchesRoom && matchesTeacher;
+        }
+
+        function startLiveClock() {
+            setInterval(() => {
+                const now = new Date();
+                const hours = String(now.getHours()).padStart(2, '0');
+                const mins = String(now.getMinutes()).padStart(2, '0');
+                const secs = String(now.getSeconds()).padStart(2, '0');
+                document.getElementById('live-clock').textContent = `${hours}:${mins}:${secs}`;
+
+                updateLiveStatusBanner();
+            }, 1000);
+        }
+
+        function getCurrentActivePeriodInfo() {
+            const daysMap = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+            const now = new Date();
+            
+            const currentDay = state.simulatedDay || daysMap[now.getDay()];
+            
+            let currentMinutes;
+            if (state.simulatedTime) {
+                const [h, m] = state.simulatedTime.split(':').map(Number);
+                currentMinutes = h * 60 + m;
+            } else {
+                currentMinutes = now.getHours() * 60 + now.getMinutes();
+            }
+
+            // Find matching period
+            let activePeriodId = null;
+            let nextPeriodId = null;
+
+            PERIOD_TIMES.forEach(p => {
+                const [startH, startM] = p.start.split(':').map(Number);
+                const [endH, endM] = p.end.split(':').map(Number);
+                const startMins = startH * 60 + startM;
+                const endMins = endH * 60 + endM;
+
+                if (currentMinutes >= startMins && currentMinutes < endMins) {
+                    activePeriodId = p.id;
+                } else if (currentMinutes < startMins && !nextPeriodId) {
+                    nextPeriodId = p.id;
+                }
+            });
+
+            return {
+                day: currentDay,
+                periodId: activePeriodId,
+                nextPeriodId: nextPeriodId
+            };
+        }
+
+        function updateLiveStatusBanner() {
+            const info = getCurrentActivePeriodInfo();
+            const daySchedule = SCHEDULE[info.day] || [];
+
+            const activeItem = daySchedule.find(i => i.period === info.periodId);
+            const nextItem = daySchedule.find(i => i.period === (info.periodId ? info.periodId + 1 : info.nextPeriodId));
+
+            const titleEl = document.getElementById('active-subject-title');
+            const teacherEl = document.getElementById('active-teacher-name');
+            const roomEl = document.getElementById('active-room-name');
+            const periodNumEl = document.getElementById('active-period-num');
+            const statusTag = document.getElementById('active-status-tag');
+
+            const nextTitleEl = document.getElementById('next-subject-title');
+            const nextDetailsEl = document.getElementById('next-subject-details');
+
+            if (activeItem) {
+                const pTime = PERIOD_TIMES.find(p => p.id === activeItem.period);
+                statusTag.textContent = 'EM ANDAMENTO';
+                statusTag.className = 'px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300';
+                
+                periodNumEl.textContent = `${pTime.label} (${pTime.start} - ${pTime.end})`;
+                titleEl.textContent = activeItem.subject.name;
+                teacherEl.textContent = activeItem.subject.teacher;
+                roomEl.textContent = activeItem.room;
+            } else {
+                statusTag.textContent = 'INTERVALO / FORA DO HORÁRIO';
+                statusTag.className = 'px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded-md bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
+                
+                periodNumEl.textContent = 'Sem aula em andamento agora';
+                titleEl.textContent = 'Nenhuma aula no momento';
+                teacherEl.textContent = '-';
+                roomEl.textContent = '-';
+            }
+
+            if (nextItem) {
+                nextTitleEl.textContent = nextItem.subject.name;
+                nextDetailsEl.textContent = `${nextItem.subject.teacher} • ${nextItem.room}`;
+            } else {
+                nextTitleEl.textContent = 'Fim das aulas';
+                nextDetailsEl.textContent = 'Sem mais aulas cadastradas para hoje';
+            }
+        }
+
+        function toggleTimeSimulatorModal() {
+            document.getElementById('simulator-modal').classList.toggle('hidden');
+        }
+
+        function applySimulation() {
+            state.simulatedDay = document.getElementById('sim-day-select').value;
+            state.simulatedTime = document.getElementById('sim-time-input').value;
+
+            if (state.simulatedDay) {
+                selectDay(state.simulatedDay);
+            }
+
+            toggleTimeSimulatorModal();
+            renderDailyCards();
+            updateLiveStatusBanner();
+        }
+
+        function resetSimulation() {
+            state.simulatedDay = null;
+            state.simulatedTime = null;
+            detectCurrentDay();
+            toggleTimeSimulatorModal();
+            renderDailyCards();
+            updateLiveStatusBanner();
+        }
+    </script>
+</body>
+</html>
